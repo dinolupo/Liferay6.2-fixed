@@ -1,12 +1,12 @@
-# ENGLISH - Liferay 6.2 Modified with fix to support JSON WEB SERVICES e Java8
+# ENGLISH - Liferay 6.2 modified with a fix to support JSON Web Services and Java 8
 
-Corrects the following errors:
+This version fixes the following bugs:
 
 [https://issues.liferay.com/browse/LPS-59203]()
 
 [https://issues.liferay.com/browse/LPS-52076]()
 
-Fixes of those errors are solved in the Liferay EE 6.2 and 7.0 versions, so I decided to include the fix and recompile Liferay.
+Those errors are solved in the Liferay EE 6.2 and 7.0 versions, so I decided to correct the CE edition and recompile Liferay 6.2.
 
 To compile Liferay I created a Vagrant VM because Liferay can be compiled only with JDK 7:
 
