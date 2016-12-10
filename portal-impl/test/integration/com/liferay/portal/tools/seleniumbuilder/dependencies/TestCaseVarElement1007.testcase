@@ -1,0 +1,7 @@
+<definition>
+	<var name="name" value="value">
+
+	<command name="name" priority="5">
+		<execute macro="macro" />
+	</command>
+</definition>

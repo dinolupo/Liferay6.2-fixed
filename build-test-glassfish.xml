@@ -1,0 +1,138 @@
+<?xml version="1.0"?>
+
+<project name="portal-test-glassfish" basedir="." default="test" xmlns:antelope="antlib:ise.antelope.tasks">
+	<import file="build-test.xml" />
+
+	<target name="run-glassfish">
+		<antcall target="clean-up-logs" />
+
+		<record action="start" name="log" />
+
+		<antcall target="run-simple-server">
+			<param name="simple.server.dir" value="${app.server.glassfish.dir}" />
+			<param name="simple.server.bin.dir" value="${app.server.glassfish.bin.dir}" />
+			<param name="simple.server.deploy.dir" value="${app.server.glassfish.deploy.dir}" />
+			<param name="simple.server.lib.global.dir" value="${app.server.glassfish.lib.global.dir}" />
+			<param name="simple.server.portal.dir" value="${app.server.glassfish.instance.dir}/applications/liferay-portal" />
+			<param name="simple.server.start.executable" value="asadmin${file.suffix.bat}" />
+			<param name="simple.server.start.executable.arg.line" value="start-domain -v" />
+			<param name="simple.server.stop.executable" value="asadmin${file.suffix.bat}" />
+			<param name="simple.server.stop.executable.arg.line" value="stop-domain" />
+		</antcall>
+
+		<record action="stop" name="log" />
+
+		<antcall target="evaluate-logs" />
+	</target>
+
+	<target name="run-selenium-glassfish">
+		<if>
+			<not>
+				<isset property="build.app.server" />
+			</not>
+			<then>
+				<ant antfile="build-dist.xml" target="build-dist-glassfish" />
+			</then>
+		</if>
+
+		<antcall target="revert-test-properties" />
+
+		<antcall target="prepare-virtual-host-name-properties" />
+
+		<antcall target="start-selenium" />
+
+		<antcall target="run-glassfish">
+			<param name="test.class" value="${test.name}" />
+		</antcall>
+
+		<antcall target="stop-selenium" />
+	</target>
+
+	<target name="run-selenium-versioned-glassfish">
+		<if>
+			<equals arg1="${lp.version}" arg2="6.1.1" />
+			<then>
+				<property name="file.dir" value="6.1.1-ga2" />
+			</then>
+			<else>
+				<property name="file.dir" value="${lp.version}" />
+			</else>
+		</if>
+
+		<if>
+			<not>
+				<uptodate
+					srcfile="${hudson.portal.dependencies.dir}/${file.dir}/${bundled.file.name}"
+					targetfile="${app.server.parent.dir}/${bundled.file.name}"
+				/>
+			</not>
+			<then>
+				<copy
+					file="${hudson.portal.dependencies.dir}/${file.dir}/${bundled.file.name}"
+					todir="${app.server.parent.dir}"
+				/>
+			</then>
+		</if>
+
+		<unzip src="${app.server.parent.dir}/${bundled.file.name}" dest="${app.server.parent.dir}" />
+
+		<chmod perm="a+x">
+			<fileset dir="${app.server.parent.dir}">
+				<include name="**/*.sh" />
+			</fileset>
+		</chmod>
+
+		<echo file="app.server.${user.name}.properties">app.server.type=glassfish
+
+app.server.glassfish.dir=${app.server.parent.dir}/${bundled.dir.name}</echo>
+
+		<antcall target="revert-test-properties" />
+
+		<ant dir="portal-impl" target="deploy-properties" inheritAll="false" />
+
+		<delete dir="${liferay.home}/data" />
+		<delete dir="${liferay.home}/logs" />
+
+		<if>
+			<or>
+				<equals arg1="${lp.version}" arg2="5.2.5" />
+				<equals arg1="${lp.version}" arg2="5.2.7" />
+				<equals arg1="${lp.version}" arg2="5.2.8" />
+			</or>
+			<then>
+				<copy
+					file="${hudson.license.dependencies.dir}/${lp.version}/license"
+					todir="${liferay.home}/ee"
+				/>
+			</then>
+			<elseif>
+				<or>
+					<equals arg1="${lp.version}" arg2="5.2.9" />
+					<equals arg1="${lp.version}" arg2="6.0.10" />
+					<equals arg1="${lp.version}" arg2="6.0.11" />
+					<equals arg1="${lp.version}" arg2="6.0.12" />
+					<equals arg1="${lp.version}" arg2="6.1.10" />
+					<equals arg1="${lp.version}" arg2="6.1.20" />
+				</or>
+				<then>
+					<copy todir="${liferay.home}/deploy">
+						<fileset
+							dir="${hudson.license.dependencies.dir}/${lp.version}"
+							includes="license-portal-*.xml"
+						/>
+					</copy>
+				</then>
+			</elseif>
+		</if>
+
+		<antcall target="start-selenium" />
+
+		<antcall target="run-glassfish" inheritAll="false">
+			<param name="test.class" value="${test.name}" />
+		</antcall>
+
+		<antcall target="stop-selenium" />
+
+		<delete file="app.server.${user.name}.properties" failonerror="false" />
+	</target>
+</project>

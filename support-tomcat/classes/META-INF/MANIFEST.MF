@@ -1,0 +1,43 @@
+Manifest-Version: 1.0
+Ant-Version: Apache Ant 1.9.3
+Created-By: 1.7.0_80-b15 (Oracle Corporation)
+Bundle-ManifestVersion: 2
+Bundle-RequiredExecutionEnvironment: J2SE-1.5
+Bundle-Vendor: Liferay, Inc.
+Bundle-Version: 6.2.0
+Export-Package: com.liferay.support.tomcat.jasper.runtime;uses:="javax
+ .servlet,javax.servlet.jsp,javax.servlet.jsp.tagext,org.apache.jasper
+ .runtime",com.liferay.support.tomcat.loader;uses:="org.apache.catalin
+ a.loader",com.liferay.support.tomcat.poller.comet;uses:="com.liferay.
+ portal.kernel.exception,com.liferay.portal.kernel.poller.comet,javax.
+ servlet,javax.servlet.http,org.apache.catalina.comet",com.liferay.sup
+ port.tomcat.session;uses:="org.apache.catalina,org.apache.catalina.se
+ ssion",com.liferay.support.tomcat.startup;uses:="org.apache.catalina.
+ startup"
+Import-Package: com.liferay.portal.kernel.exception;resolution:=option
+ al,com.liferay.portal.kernel.log;resolution:=optional,com.liferay.por
+ tal.kernel.poller.comet;resolution:=optional,com.liferay.portal.kerne
+ l.util;resolution:=optional,com.liferay.portal.kernel.uuid;resolution
+ :=optional,javax.servlet;resolution:=optional,javax.servlet.http;reso
+ lution:=optional,javax.servlet.jsp;resolution:=optional,javax.servlet
+ .jsp.tagext;resolution:=optional,org.apache.catalina;resolution:=opti
+ onal,org.apache.catalina.comet;resolution:=optional,org.apache.catali
+ na.loader;resolution:=optional,org.apache.catalina.session;resolution
+ :=optional,org.apache.catalina.startup;resolution:=optional,org.apach
+ e.jasper.runtime;resolution:=optional
+Javac-Compiler: org.eclipse.jdt.core.JDTCompilerAdapter
+Javac-Debug: on
+Javac-Deprecation: off
+Javac-Encoding: ISO-8859-1
+Jsp-Precompile: off
+Liferay-Portal-Build-Date: Wed Jan 06 00:00:00 UTC 2016
+Liferay-Portal-Build-Number: 6205
+Liferay-Portal-Build-Revision: 
+Liferay-Portal-Build-Time: Thu Nov 24 09:30:15 UTC 2016
+Liferay-Portal-Code-Name: Newton
+Liferay-Portal-Parent-Build-Number: 6205
+Liferay-Portal-Release-Info: Liferay Portal Community Edition 6.2 CE G
+ A6 (Newton / Build 6205 / January 6, 2016)
+Liferay-Portal-Server-Info: Liferay Portal Community Edition / 6.2.5
+Liferay-Portal-Version: 6.2.0
+

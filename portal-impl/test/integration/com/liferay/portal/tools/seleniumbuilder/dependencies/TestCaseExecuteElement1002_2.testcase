@@ -1,0 +1,7 @@
+<definition>
+	<command name="name" priority="5">
+		<execute macro="macro">
+			<fail />
+		</execute>
+	</command>
+</definition>

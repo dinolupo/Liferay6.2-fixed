@@ -1,0 +1,5 @@
+Bundle-Version: 6.2.0
+Export-Package: com.liferay.*
+Import-Package: *
+Include-Resource: classes
+Private-Package: *

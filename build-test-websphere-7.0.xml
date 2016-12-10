@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+
+<project name="portal-test-websphere-7.0" basedir="." default="test" xmlns:antelope="antlib:ise.antelope.tasks">
+	<import file="build-test.xml" />
+
+	<target name="run-selenium-websphere-7.0">
+		<echo file="app.server.${user.name}.properties">app.server.type=websphere</echo>
+
+		<if>
+			<not>
+				<isset property="build.app.server" />
+			</not>
+			<then>
+				<ant antfile="build-dist.xml" target="unzip-websphere" />
+
+				<ant target="all" />
+			</then>
+		</if>
+
+		<antcall target="revert-test-properties" />
+
+		<antcall target="prepare-selenium" />
+
+		<antcall target="start-selenium" />
+
+		<antcall target="run-websphere-7.0">
+			<param name="test.class" value="${test.name}" />
+		</antcall>
+
+		<antcall target="stop-selenium" />
+	</target>
+
+	<target name="run-websphere-7.0">
+		<antcall target="clean-up-logs" />
+
+		<record action="start" name="log" />
+
+		<antcall target="run-simple-server">
+			<param name="simple.server.dir" value="${app.server.websphere.dir}" />
+			<param name="simple.server.bin.dir" value="${app.server.websphere.bin.dir}" />
+			<param name="simple.server.deploy.dir" value="${app.server.websphere.deploy.dir}" />
+			<param name="simple.server.lib.global.dir" value="${app.server.websphere.lib.global.dir}" />
+			<param name="simple.server.portal.dir" value="${app.server.websphere.portal.dir}" />
+			<param name="simple.server.start.executable" value="startServer.bat" />
+			<param name="simple.server.start.executable.arg.line" value="server1" />
+			<param name="simple.server.stop.executable" value="stopServer.bat" />
+			<param name="simple.server.stop.executable.arg.line" value="server1" />
+		</antcall>
+
+		<record action="stop" name="log" />
+
+		<antcall target="evaluate-logs" />
+	</target>
+</project>

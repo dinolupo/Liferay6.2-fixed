@@ -1,0 +1,6 @@
+Bundle-Version: 6.2.0
+Import-Package: *
+Include-Resource: classes
+Private-Package: com.liferay.*
+
+-donotcopy: (log4j\.properties|logging\.properties|portal-.*\.properties|system-.*\.properties|\.touch)

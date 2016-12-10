@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<project name="benchmarks" basedir="." default="run">
+	<import file="../build-common.xml" />
+
+	<target name="build-sample-sql">
+		<property name="sample.sql.properties.file" value="${basedir}/benchmarks.properties" />
+
+		<java
+			classname="com.liferay.portal.tools.samplesqlbuilder.SampleSQLBuilder"
+			classpathref="project.classpath"
+		>
+			<sysproperty key="external-properties" value="com/liferay/portal/tools/dependencies/portal-tools.properties" />
+			<arg value="${sample.sql.properties.file}" />
+		</java>
+	</target>
+</project>

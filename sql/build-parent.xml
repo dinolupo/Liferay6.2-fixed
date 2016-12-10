@@ -1,0 +1,229 @@
+<?xml version="1.0"?>
+
+<project name="sql-parent">
+	<import file="../build-common.xml" />
+
+	<mkdir dir="log" />
+
+	<target name="build-db">
+		<var name="fork.mode" value="false" />
+
+		<if>
+			<equals arg1="${db.build.debug}" arg2="true" />
+			<then>
+				<var name="fork.mode" value="true" />
+			</then>
+		</if>
+
+		<java
+			classname="com.liferay.portal.tools.DBBuilder"
+			classpathref="project.classpath"
+			fork="${fork.mode}"
+		>
+			<jvmarg line="${db.build.debug.jpda}" />
+			<jvmarg value="-Xmx${db.build.java.mx}" />
+			<jvmarg value="-XX:MaxPermSize=${db.build.java.maxpermsize}" />
+			<arg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
+			<arg value="db.database.name=${database.name}" />
+			<arg value="db.database.types=${database.types}" />
+			<arg value="db.sql.dir=${basedir}" />
+		</java>
+	</target>
+
+	<target name="clean">
+		<delete includeemptydirs="true" failonerror="false">
+			<fileset
+				dir="."
+				excludes="*.sql,*.vm"
+				includes="create*/**,indexes/**,log/**,portal*/**,sequences/**,update*/**"
+			/>
+		</delete>
+	</target>
+
+	<target name="export-oracle">
+		<exec executable="${oracle.export.executable}">
+			<arg line="${oracle.export.arg.line}" />
+		</exec>
+	</target>
+
+	<target name="rebuild-all">
+		<antcall target="rebuild-db2" />
+		<antcall target="rebuild-firebird" />
+		<antcall target="rebuild-hypersonic" />
+		<antcall target="rebuild-mysql" />
+		<antcall target="rebuild-oracle" />
+		<antcall target="rebuild-postgresql" />
+		<antcall target="rebuild-sql-server" />
+		<antcall target="rebuild-sybase" />
+	</target>
+
+	<target name="rebuild-database">
+		<exec executable="${executable}" output="log/${log}">
+			<arg line="${arg.line}" />
+		</exec>
+	</target>
+
+	<target name="rebuild-db2">
+		<antcall target="rebuild-database">
+			<param name="executable" value="${db2.executable}" />
+			<param name="arg.line" value="${db2.arg.line}" />
+			<param name="log" value="${db2.log}" />
+		</antcall>
+	</target>
+
+	<target name="rebuild-firebird">
+		<delete file="${database.name}.gdb" failonerror="false" />
+
+		<antcall target="rebuild-database">
+			<param name="executable" value="${firebird.executable}" />
+			<param name="arg.line" value="${firebird.arg.line}" />
+			<param name="log" value="${firebird.log}" />
+		</antcall>
+	</target>
+
+	<target name="rebuild-hypersonic">
+		<delete file="${database.name}.lck" failonerror="false" />
+		<delete file="${database.name}.log" failonerror="false" />
+		<delete file="${database.name}.properties" failonerror="false" />
+		<delete file="${database.name}.script" failonerror="false" />
+
+		<java
+			classname="com.liferay.portal.tools.DBLoader"
+			classpathref="project.classpath"
+		>
+			<arg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
+			<arg value="-Dfile.encoding=UTF-8" />
+			<arg value="db.database.name=${database.name}" />
+			<arg value="db.database.type=hypersonic" />
+			<arg value="db.sql.dir=${basedir}" />
+			<arg value="db.file.name=portal${database.create.suffix}/portal${database.create.suffix}-hypersonic.sql" />
+		</java>
+
+		<java
+			classname="com.liferay.portal.tools.DBLoader"
+			classpathref="project.classpath"
+		>
+			<arg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
+			<arg value="-Dfile.encoding=UTF-8" />
+			<arg value="db.database.name=${database.name}" />
+			<arg value="db.database.type=hypersonic" />
+			<arg value="db.sql.dir=${basedir}" />
+			<arg value="db.file.name=indexes.sql" />
+		</java>
+
+		<delete dir="${database.name}.tmp" failonerror="false" />
+	</target>
+
+	<target name="rebuild-mysql">
+		<exec executable="${mysql.executable}" input="${mysql.input}" output="log/${mysql.log}" resultproperty="rebuild-mysql.result">
+			<arg line="${mysql.arg.line}" />
+		</exec>
+
+		<if>
+			<not>
+				<equals arg1="${rebuild-mysql.result}" arg2="0" />
+			</not>
+			<then>
+				<loadfile property="mysql.log.content" srcFile="log/${mysql.log}" />
+
+				<fail>${mysql.log.content}</fail>
+			</then>
+		</if>
+	</target>
+
+	<target name="rebuild-oracle">
+		<antcall target="rebuild-database">
+			<param name="executable" value="${oracle.sqlplus.executable}" />
+			<param name="arg.line" value="${oracle.arg.line}" />
+			<param name="log" value="${oracle.log}" />
+		</antcall>
+
+		<delete>
+			<fileset dir="portal" includes="*.log" />
+		</delete>
+	</target>
+
+	<target name="rebuild-postgresql">
+		<antcall target="rebuild-database">
+			<param name="executable" value="${postgresql.executable}" />
+			<param name="arg.line" value="${postgresql.arg.line}" />
+			<param name="log" value="${postgresql.log}" />
+		</antcall>
+	</target>
+
+	<target name="rebuild-sql-server">
+		<antcall target="rebuild-database">
+			<param name="executable" value="${sql-server.executable}" />
+			<param name="arg.line" value="${sql-server.arg.line}" />
+			<param name="log" value="${sql-server.log}" />
+		</antcall>
+	</target>
+
+	<target name="rebuild-sybase">
+		<antcall target="rebuild-database">
+			<param name="executable" value="${sybase.executable}" />
+			<param name="arg.line" value="${sybase.arg.line}" />
+			<param name="log" value="${sybase.log}" />
+		</antcall>
+	</target>
+
+	<target name="test-sample-sql" >
+		<tstamp>
+			<format property="tstamp.value" pattern="yyyyMMddkkmmssSSS" />
+		</tstamp>
+
+		<mkdir dir="${tstamp.value}" />
+
+		<propertyfile file="test-sample-sql.properties">
+			<entry key="sql.dir" value="${basedir}" />
+			<entry key="sample.sql.asset.publisher.query.name" value="assetCategories" />
+			<entry key="sample.sql.db.type" value="hypersonic" />
+			<entry key="sample.sql.max.asset.category.count" value="1" />
+			<entry key="sample.sql.max.asset.entry.to.asset.category.count" value="1" />
+			<entry key="sample.sql.max.asset.entry.to.asset.tag.count" value="1" />
+			<entry key="sample.sql.max.asset.publisher.page.count" value="2" />
+			<entry key="sample.sql.max.asset.tag.count" value="1" />
+			<entry key="sample.sql.max.asset.vocabulary.count" value="1" />
+			<entry key="sample.sql.max.blogs.entry.comment.count" value="1" />
+			<entry key="sample.sql.max.blogs.entry.count" value="1" />
+			<entry key="sample.sql.max.ddl.custom.field.count" value="1" />
+			<entry key="sample.sql.max.ddl.record.count" value="1" />
+			<entry key="sample.sql.max.ddl.record.set.count" value="1" />
+			<entry key="sample.sql.max.dl.file.entry.count" value="1" />
+			<entry key="sample.sql.max.dl.file.entry.size" value="1" />
+			<entry key="sample.sql.max.dl.folder.count" value="1" />
+			<entry key="sample.sql.max.dl.folder.depth" value="1" />
+			<entry key="sample.sql.max.group.count" value="1" />
+			<entry key="sample.sql.max.journal.article.count" value="1" />
+			<entry key="sample.sql.max.journal.article.page.count" value="1" />
+			<entry key="sample.sql.max.journal.article.size" value="1" />
+			<entry key="sample.sql.max.journal.article.version.count" value="1" />
+			<entry key="sample.sql.max.mb.category.count" value="1" />
+			<entry key="sample.sql.max.mb.message.count" value="1" />
+			<entry key="sample.sql.max.mb.thread.count" value="1" />
+			<entry key="sample.sql.max.user.count" value="1" />
+			<entry key="sample.sql.max.user.to.group.count" value="1" />
+			<entry key="sample.sql.max.wiki.node.count" value="1" />
+			<entry key="sample.sql.max.wiki.page.comment.count" value="1" />
+			<entry key="sample.sql.max.wiki.page.count" value="1" />
+			<entry key="sample.sql.optimize.buffer.size" value="8192" />
+			<entry key="sample.sql.output.csv.file.names" value="assetPublisher,blog,company,documentLibrary,dynamicDataList,layout,messageBoard,repository,wiki" />
+			<entry key="sample.sql.output.dir" value="${tstamp.value}" />
+			<entry key="sample.sql.output.merge" value="true" />
+			<entry key="sample.sql.script" value="com/liferay/portal/tools/samplesqlbuilder/dependencies/sample.ftl" />
+		</propertyfile>
+
+		<java
+			classname="com.liferay.portal.tools.samplesqlbuilder.TestSampleSQLBuilder"
+			classpathref="project.classpath"
+			failonerror="true"
+		>
+			<sysproperty key="external-properties" value="com/liferay/portal/tools/dependencies/portal-tools.properties" />
+			<arg value="test-sample-sql.properties" />
+		</java>
+
+		<delete file="test-sample-sql.properties" />
+
+		<delete dir="${tstamp.value}" />
+	</target>
+</project>

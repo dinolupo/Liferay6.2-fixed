@@ -1,0 +1,174 @@
+<?xml version="1.0"?>
+
+<project name="portal-test-tck" basedir="." default="test" xmlns:antelope="antlib:ise.antelope.tasks">
+	<import file="build-test.xml" />
+
+	<target name="prepare-tck">
+		<delete dir="tools/tck" />
+
+		<if>
+			<isset property="portlet.tck.url" />
+			<then>
+				<tstamp>
+					<format property="tstamp.value" pattern="yyyyMMddkkmmssSSS" />
+				</tstamp>
+
+				<get dest="${tstamp.value}.zip" src="${portlet.tck.url}" />
+
+				<unzip src="${tstamp.value}.zip" dest="tools/tck" />
+
+				<delete file="${tstamp.value}.zip" />
+			</then>
+			<else>
+				<unzip src="${portlet.tck.zip}" dest="tools/tck" />
+			</else>
+		</if>
+
+		<chmod
+			dir="tools/tck/bin/"
+			includes="tsant*"
+			perm="744"
+		/>
+
+		<replace file="tools/tck/bin/ts.jte">
+			<replacefilter token="http://localhost:8080/pluto/tck" value="http://localhost:8080/c/portal/tck" />
+		</replace>
+
+		<echo file="tools/tck/bin/build.properties" append="true">
+
+work.dir=${basedir.unix}/tools/tck/work</echo>
+	</target>
+
+	<target name="record-test-tck-package-names">
+		<ant antfile="build-test-tck.xml" target="prepare-tck" />
+
+		<script classpathref="project.classpath" language="beanshell">
+			import com.liferay.portal.kernel.util.OSDetector;
+			import com.liferay.portal.kernel.util.StringUtil;
+
+			import org.apache.tools.ant.DirectoryScanner;
+
+			DirectoryScanner directoryScanner = new DirectoryScanner();
+
+			directoryScanner.setBasedir(project.getBaseDir());
+			directoryScanner.setIncludes(new String[] {"**/com/sun/ts/tests/**/*.war"});
+
+			directoryScanner.scan();
+
+			String[] fileNames = directoryScanner.getIncludedFiles();
+
+			Arrays.sort(fileNames);
+
+			Set packageNames = new TreeSet();
+
+			for (String fileName : fileNames) {
+				int x = fileName.indexOf("com/");
+				int y = fileName.lastIndexOf("/");
+
+				if (OSDetector.isWindows()) {
+					x = fileName.indexOf("com\\");
+					y = fileName.lastIndexOf("\\");
+				}
+
+				String packageName = fileName.substring(x, y);
+
+				if (packageName.endsWith("PortletSessionSecondapp")) {
+					continue;
+				}
+
+				packageName = StringUtil.replace(packageName, "/", ".");
+				packageName = StringUtil.replace(packageName, "\\", ".");
+
+				packageNames.add(packageName);
+			}
+
+			project.setProperty("test.tck.package.names", StringUtil.merge(packageNames, " "));
+		</script>
+
+		<echo file="test.tck.package.names.properties">TEST_TCK_PACKAGE_NAMES=${test.tck.package.names}</echo>
+	</target>
+
+	<target name="run-tck-tomcat">
+		<antcall target="clean-up-java-processes" inheritAll="false" />
+
+		<antcall target="prepare-portal-ext-properties">
+			<param name="tck.url" value="true" />
+		</antcall>
+
+		<antcall target="rebuild-database" inheritAll="false" />
+
+		<antcall target="prepare-tck" />
+
+		<ant antfile="build-test-plugins.xml" target="deploy-simple-server-plugins">
+			<property name="plugin.types" value="portlets" />
+			<property name="plugins.includes" value="marketplace-portlet" />
+			<property name="simple.server.dir" value="${app.server.tomcat.dir}" />
+			<property name="simple.server.bin.dir" value="${app.server.tomcat.bin.dir}" />
+			<property name="simple.server.deploy.dir" value="${app.server.tomcat.deploy.dir}" />
+			<property name="simple.server.lib.global.dir" value="${app.server.tomcat.lib.global.dir}" />
+			<property name="simple.server.portal.dir" value="${app.server.tomcat.portal.dir}" />
+		</ant>
+
+		<if>
+			<not>
+				<isset property="test.package" />
+			</not>
+			<then>
+				<property name="test.package" value="com.sun.ts.tests" />
+			</then>
+		</if>
+
+		<propertyregex
+			global="true"
+			input="${test.package}."
+			property="test.directory"
+			regexp="\."
+			replace="/"
+		/>
+
+		<copy todir="${liferay.home}/deploy" flatten="true">
+			<fileset
+				dir="tools/tck/dist/${test.directory}"
+				includes="**/*.war"
+			/>
+		</copy>
+
+		<parallel>
+			<exec dir="${app.server.tomcat.bin.dir}" executable="catalina${file.suffix.bat}" resolveexecutable="true">
+				<arg line="run" />
+			</exec>
+
+			<sequential>
+				<waitfor>
+					<http url="http://localhost:8080" />
+				</waitfor>
+
+				<sleep seconds="30" />
+
+				<condition property="tsant.file.suffix.bat" value=".bat" else="">
+					<contains string="${os.name}" substring="Windows" casesensitive="false" />
+				</condition>
+
+				<exec dir="tools/tck/src/${test.directory}" executable="${basedir}/tools/tck/bin/tsant${tsant.file.suffix.bat}">
+					<arg line="runclient" />
+					<env key="TS_HOME" value="${basedir}/tools/tck" />
+				</exec>
+
+				<exec dir="${app.server.tomcat.bin.dir}" executable="shutdown${file.suffix.bat}" resolveexecutable="true" />
+			</sequential>
+		</parallel>
+
+		<mkdir dir="portal-impl/test-results" />
+
+		<java
+			classname="com.liferay.portal.tools.TCKtoJUnitConverter"
+			classpathref="project.classpath"
+			fork="true"
+			newenvironment="true"
+		>
+			<jvmarg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
+			<arg value="tools/tck/work/jtData/harness.trace" />
+			<arg value="portal-impl/test-results" />
+		</java>
+	</target>
+</project>
